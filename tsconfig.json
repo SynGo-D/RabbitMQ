@@ -1,4 +1,4 @@
-{
+/*{
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
     // File Layout
@@ -41,4 +41,26 @@
     "moduleDetection": "force",
     "skipLibCheck": true,
   }
+} */
+
+{
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+
+    "target": "ES2022",
+    "module": "CommonJS",
+
+    "types": ["node"],
+
+    "strict": true,
+
+    "esModuleInterop": true,
+
+    "skipLibCheck": true,
+
+    "sourceMap": true
+  },
+
+  "include": ["src"]
 }

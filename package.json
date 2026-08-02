@@ -16,8 +16,9 @@
   },
   "name": "rabbitmq",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "type": "module",
+  "description": "RabbitMQ communication service for SynGo-D backend microservices",
+  "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon --exec ts-node src/server.ts",
     "build": "tsc",

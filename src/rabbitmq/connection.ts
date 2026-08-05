@@ -1,7 +1,9 @@
 import * as amqp from "amqplib";
+import { Channel, ChannelModel } from 'amqplib';
 
-let connection: amqp.Connection;
-let channel: amqp.Channel;
+
+let connection: ChannelModel;
+let channel: Channel;
 
 export async function connectRabbitMQ() {
     connection = await amqp.connect(process.env.RABBITMQ_URL!);
@@ -17,4 +19,8 @@ export function getChannel() {
     }
 
     return channel;
+}
+
+export function isRabbitMQConnected(): boolean {
+    return !!channel;
 }

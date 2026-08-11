@@ -5,6 +5,10 @@ import app from "./app.js";
 
 import { initializeRabbitMQ } from "./rabbitmq";
 
+import { consume } from "./rabbitmq/consumer";
+import { QUEUES } from "./rabbitmq/queues";
+
+
 const PORT = process.env.PORT || 5000;
 
 async function start() {
@@ -12,6 +16,10 @@ async function start() {
     try {
 
         await initializeRabbitMQ();
+
+        await consume(QUEUES.PR_QUEUE, async (data) => {
+            console.log("Received message:", data);
+        });
 
         app.listen(PORT, () => {
 

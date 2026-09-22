@@ -9,7 +9,7 @@
     "@types/amqplib": "^0.10.8",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/node": "^26.1.2",
+    "@types/node": "^26.6.2",
     "tsx": "^4.23.7",
     "typescript": "^5.9.2"
   },
@@ -22,7 +22,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "echo \"No tests yet\""
+    "test": "node --import tsx --test src/**/*.test.ts"
   },
   "repository": {
     "type": "git",

@@ -17,7 +17,29 @@
  * serves them one by one.
  */
 
-import { getChannel } from "./connection";
+import type { ConsumeMessage } from "amqplib";
+import { getChannel, onReconnected } from "./connection";
+
+/**
+ * If a message keeps failing, we don't want to retry it forever -
+ * that would just spin in a loop and waste resources. After this
+ * many attempts, we give up and move it to a "dead letter" queue
+ * instead, so a human can look at it later.
+ */
+const MAX_RETRIES = 3;
+
+/**
+ * Every queue we start listening to gets remembered here.
+ *
+ * Why? If RabbitMQ disconnects and we reconnect, we get a brand
+ * new channel and lose all our old listeners. Keeping this list
+ * lets us automatically start listening again on the new channel,
+ * instead of the app going silent after a reconnect.
+ */
+const activeSubscriptions: Array<{
+    queue: string;
+    handler: (data: unknown) => Promise<void>;
+}> = [];
 
 /**
  * Starts listening to a RabbitMQ queue.
@@ -29,6 +51,23 @@ import { getChannel } from "./connection";
  * Function that processes each received message.
  */
 export async function consume(
+    queue: string,
+    handler: (data: unknown) => Promise<void>
+): Promise<void> {
+
+    // Remember this subscription so we can restore it after a reconnect.
+    activeSubscriptions.push({ queue, handler });
+
+    await startListening(queue, handler);
+
+}
+
+/**
+ * The actual "start listening" logic, pulled out into its own
+ * function so it can be called both by consume() and again
+ * automatically after a reconnect.
+ */
+async function startListening(
     queue: string,
     handler: (data: unknown) => Promise<void>
 ): Promise<void> {
@@ -88,22 +127,97 @@ export async function consume(
             console.error("Failed to process message.");
             console.error(error);
 
-            /**
-             * Negative acknowledgement.
-             *
-             * RabbitMQ now knows
-             * the consumer failed.
-             *
-             * Setting requeue=true
-             * places the message back
-             * into the queue.
-             *
-             * This prevents message loss.
-             */
-            channel.nack(msg, false, true);
+            await handleFailedMessage(queue, msg, error);
 
         }
 
     });
 
 }
+
+/**
+ * Decides what to do with a message that failed to process:
+ *
+ * - If it hasn't failed too many times yet, put it back on the
+ *   same queue with a retry count attached, so it gets tried again.
+ * - If it has already failed MAX_RETRIES times, stop retrying and
+ *   move it to a dead-letter queue instead, so it doesn't block
+ *   or loop forever. A human can inspect it there later.
+ *
+ * Either way, we ack() the original message - we're not losing it,
+ * we're just moving on with a fresh copy of it (or setting it aside).
+ */
+async function handleFailedMessage(
+    queue: string,
+    msg: ConsumeMessage,
+    error: unknown
+): Promise<void> {
+
+    const channel = getChannel();
+
+    const retryCount = getRetryCount(msg) + 1;
+
+    if (retryCount <= MAX_RETRIES) {
+
+        console.warn(`Retrying message (attempt ${retryCount}/${MAX_RETRIES})...\n`);
+
+        channel.sendToQueue(queue, msg.content, {
+            persistent: true,
+            headers: { "x-retry-count": retryCount }
+        });
+
+    } else {
+
+        const deadLetterQueue = `${queue}.dead_letter`;
+
+        console.error(
+            `Message failed ${MAX_RETRIES} times. Moving it to "${deadLetterQueue}".\n`
+        );
+
+        // Make sure the dead-letter queue exists before we send to it.
+        await channel.assertQueue(deadLetterQueue, { durable: true });
+
+        channel.sendToQueue(deadLetterQueue, msg.content, {
+            persistent: true,
+            headers: {
+                "x-retry-count": retryCount,
+                "x-failed-reason": error instanceof Error ? error.message : String(error)
+            }
+        });
+
+    }
+
+    // Remove the original copy - we've either requeued a new copy
+    // above, or moved it to the dead-letter queue.
+    channel.ack(msg);
+
+}
+
+/**
+ * Reads how many times this message has already been retried.
+ * A message that has never failed before simply won't have this
+ * header, so we treat that as 0.
+ */
+function getRetryCount(msg: ConsumeMessage): number {
+
+    const headers = msg.properties.headers;
+
+    const count = headers?.["x-retry-count"];
+
+    return typeof count === "number" ? count : 0;
+
+}
+
+/**
+ * After a reconnect, start listening again to every queue we were
+ * listening to before the connection dropped.
+ */
+onReconnected(async () => {
+
+    for (const subscription of activeSubscriptions) {
+
+        await startListening(subscription.queue, subscription.handler);
+
+    }
+
+});

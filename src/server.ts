@@ -5,6 +5,8 @@ import app from "./app.js";
 
 import { initializeRabbitMQ } from "./rabbitmq";
 
+import { closeRabbitMQ } from "./rabbitmq/connection";
+
 import { consume } from "./rabbitmq/consumer";
 import { QUEUES } from "./rabbitmq/queues";
 
@@ -40,5 +42,26 @@ async function start() {
     }
 
 }
+
+/**
+ * Runs when the app is asked to stop (Ctrl+C locally, or when
+ * Docker/Kubernetes stops the container).
+ *
+ * We close the RabbitMQ connection on purpose here so RabbitMQ
+ * knows we shut down cleanly, instead of thinking we crashed and
+ * trying to redeliver our unacknowledged messages right away.
+ */
+async function shutdown(signal: string) {
+
+    console.log(`\nReceived ${signal}. Shutting down gracefully...`);
+
+    await closeRabbitMQ();
+
+    process.exit(0);
+
+}
+
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));
 
 start();

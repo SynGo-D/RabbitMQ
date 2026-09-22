@@ -62,5 +62,9 @@
     "sourceMap": true
   },
 
-  "include": ["src"]
+  "include": ["src"],
+
+  // Test files use node:test - they're run directly with tsx (see
+  // "npm test"), not compiled into the production build in dist/.
+  "exclude": ["src/**/*.test.ts"]
 }

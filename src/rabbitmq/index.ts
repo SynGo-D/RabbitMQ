@@ -2,6 +2,9 @@ import { connectRabbitMQ, getChannel, onReconnected } from "./connection";
 
 import { QUEUES } from "./queues";
 
+// Export dead-letter queue functionality
+export { onDeadLetter, type DeadLetterMetadata } from "./deadletter";
+
 // Pulled into its own function so it can also be re-run by the
 // onReconnected() hook below, not just on the very first connect.
 async function assertAllQueues() {

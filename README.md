@@ -17,6 +17,7 @@ src/
     connection.ts        Opens/holds the RabbitMQ connection and channel, auto-reconnects
     publisher.ts         publish(queue, message) - send a message to a queue
     consumer.ts           consume(queue, handler) - listen to a queue, with retry + dead-letter handling
+    deadletter.ts        onDeadLetter(queue, handler) - handle messages that failed after retries
     queues.ts             The list of every queue name used across the system
     types.ts               TypeScript interfaces describing what each queue's messages look like
     index.ts               initializeRabbitMQ() - connects and declares all queues
@@ -70,6 +71,34 @@ await consume(QUEUES.PR_QUEUE, async (data) => {
     // consume() will take care of retrying or dead-lettering it.
 });
 ```
+
+### Handling dead-lettered messages
+
+When a message fails 3 times, it's moved to a dead-letter queue. 
+Register a handler to be notified:
+
+```ts
+import { onDeadLetter } from "./rabbitmq";
+import { QUEUES } from "./rabbitmq/queues";
+
+await onDeadLetter(QUEUES.PR_QUEUE, async (data, metadata) => {
+    // Message failed after 3 retries
+    console.error("PR job permanently failed:", {
+        repository: data.repository,
+        prNumber: data.prNumber,
+        failureReason: metadata.failureReason,
+        retryCount: metadata.retryCount,
+    });
+    
+    // You can:
+    // - Send an alert to Slack/PagerDuty
+    // - Store in a database for manual review
+    // - Create a ticket for investigation
+    // - Forward to an admin service
+});
+```
+
+See [DEAD_LETTER_GUIDE.md](DEAD_LETTER_GUIDE.md) for detailed documentation on dead-letter queues.
 
 ## Queues
 

@@ -22,7 +22,9 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "node --import tsx --test src/**/*.test.ts"
+    "test": "node --import tsx --test src/**/*.test.ts",
+    "test:unit": "node --import tsx --test src/**/*.test.ts --grep '^(?!Integration)'",
+    "test:integration": "node --import tsx --test src/rabbitmq/integration.test.ts"
   },
   "repository": {
     "type": "git",

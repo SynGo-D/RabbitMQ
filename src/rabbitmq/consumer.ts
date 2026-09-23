@@ -75,8 +75,13 @@ async function startListening(
     // Get the existing RabbitMQ channel.
     const channel = getChannel();
 
-    console.log(`Listening to queue: ${queue}\n`);
+    // Ensure the queue exists (create it if needed)
+    // This is important for dynamic queue names (e.g., in tests)
+    await channel.assertQueue(queue, {
+        durable: true
+    });
 
+    console.log(`Listening to queue: ${queue}\n`);
     // Start listening.
     // RabbitMQ will automatically invoke this callback
     // whenever a message arrives.

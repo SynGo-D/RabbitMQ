@@ -1,4 +1,4 @@
-# Quick Command Reference for Integration Testing
+# Quick Command Reference for Testing (Unit / Integration / E2E)
 
 ## TL;DR - Just Run These Commands
 
@@ -17,11 +17,24 @@ npm install
 echo "RABBITMQ_URL=amqp://guest:guest@localhost:5672" > .env
 ```
 
-### Run Integration Tests
+### Run All Tests
 
 ```bash
-# Terminal 2: Run integration tests
+# Terminal 2: Run ALL tests (unit + integration + e2e)
+npm test
+```
+
+### Run Specific Test Type
+
+```bash
+# Unit tests only (no RabbitMQ needed)
+npm run test:unit
+
+# Integration tests only (requires RabbitMQ)
 npm run test:integration
+
+# E2E tests only (requires RabbitMQ + full server)
+npm run test:e2e
 ```
 
 ---
@@ -35,7 +48,7 @@ npm install
 
 ### Testing
 ```bash
-# All tests (unit + integration)
+# All tests (unit + integration + e2e)
 npm test
 
 # Unit tests only (no RabbitMQ needed)
@@ -44,9 +57,66 @@ npm run test:unit
 # Integration tests only (requires RabbitMQ)
 npm run test:integration
 
-# Run specific integration test
+# E2E tests only (requires RabbitMQ + server)
+npm run test:e2e
+
+# Run specific test by name (unit test)
+node --import tsx --test src/rabbitmq/connection.test.ts --grep "isRabbitMQConnected"
+
+# Run specific test by name (integration test)
 node --import tsx --test src/rabbitmq/integration.test.ts --grep "Publish and consume"
+
+# Run specific test by name (E2E test)
+node --import tsx --test src/e2e.test.ts --grep "health check"
+
+# Verbose output
+node --import tsx --test src/e2e.test.ts --verbose
 ```
+
+### E2E Testing
+
+**What is E2E Testing?**
+End-to-End tests start the actual HTTP server and make real requests to verify the complete workflow from client → HTTP → RabbitMQ → consumer.
+
+**E2E vs Integration vs Unit:**
+- **Unit Tests**: Test individual functions (no dependencies)
+- **Integration Tests**: Test RabbitMQ interactions (direct library calls)
+- **E2E Tests**: Test complete workflow (HTTP requests + server + RabbitMQ)
+
+**E2E Test Scenarios:**
+1. Server health check
+2. Publish message via HTTP and consume
+3. Multiple messages in order
+4. Message retry and dead-letter routing
+5. Large message handling
+6. Concurrent requests
+7. Connection recovery
+
+**Run E2E Tests:**
+```bash
+npm run test:e2e
+```
+
+**Expected E2E Output:**
+```
+✔ E2E: Server health check
+✔ E2E: Publish message via HTTP and consume it
+✔ E2E: Multiple messages are processed in order
+✔ E2E: Failed message is retried and dead-lettered
+✔ E2E: Health check reports disconnected when no RabbitMQ
+✔ E2E: Large message is handled correctly
+✔ E2E: Concurrent messages from multiple requests
+✔ E2E: Connection recovers after handler error
+
+ℹ tests 8
+ℹ pass 8
+ℹ fail 0
+ℹ duration_ms 14234ms
+```
+
+**E2E Test Duration:** ~14 seconds total
+
+**See Full E2E Guide:** Read [E2E_TESTING_GUIDE.md](E2E_TESTING_GUIDE.md) for comprehensive documentation.
 
 ### Development
 ```bash
@@ -100,7 +170,24 @@ docker stop rabbitmq && docker rm rabbitmq && docker run -d --name rabbitmq -p 5
 
 ## Test Results Explained
 
-### ✅ Success
+### ✅ Unit Tests Success
+```
+✔ isRabbitMQConnected() is false before connecting
+✔ getChannel() throws a clear error before connecting
+✔ publish() rejects if RabbitMQ has not been initialized yet
+✔ consume() rejects if RabbitMQ has not been initialized yet
+✔ onDeadLetter() rejects if RabbitMQ has not been initialized yet
+✔ dead-letter queue name is derived correctly
+✔ DeadLetterMetadata has all required fields
+✔ every queue name is a non-empty string
+✔ no two queues accidentally share the same name
+
+ℹ tests 9
+ℹ pass 9
+ℹ fail 0
+```
+
+### ✅ Integration Tests Success
 ```
 ✔ Integration: Publish and consume a message
 ✔ Integration: Message retry on handler failure
@@ -114,9 +201,34 @@ docker stop rabbitmq && docker rm rabbitmq && docker run -d --name rabbitmq -p 5
 ℹ fail 0
 ```
 
-### ❌ Failure
+### ✅ E2E Tests Success
 ```
-✖ Integration: Dead-letter queue routing
+✔ E2E: Server health check
+✔ E2E: Publish message via HTTP and consume it
+✔ E2E: Multiple messages are processed in order
+✔ E2E: Failed message is retried and dead-lettered
+✔ E2E: Health check reports disconnected when no RabbitMQ
+✔ E2E: Large message is handled correctly
+✔ E2E: Concurrent messages from multiple requests
+✔ E2E: Connection recovers after handler error
+
+ℹ tests 8
+ℹ pass 8
+ℹ fail 0
+```
+
+### ✅ All Tests Success
+```
+✔ All tests passing (9 + 6 + 8 = 23 total)
+ℹ tests 23
+ℹ pass 23
+ℹ fail 0
+ℹ duration_ms 28000ms (approx 28 seconds total)
+```
+
+### ❌ Failure Troubleshooting
+```
+✖ E2E: Publish message via HTTP and consume it
   Error: Timeout waiting for condition
 ```
 

@@ -1,8 +1,9 @@
 import * as amqp from "amqplib";
 import { Channel, ChannelModel } from 'amqplib';
 
-let connection: ChannelModel;
-let channel: Channel;
+let connection: ChannelModel | undefined;
+let channel: Channel | undefined;
+let isClosing = false;
 
 /**
  * How many messages a consumer is allowed to hold "in hand" at once,
@@ -46,6 +47,7 @@ async function runReconnectHooks() {
 }
 
 export async function connectRabbitMQ() {
+    isClosing = false;
     connection = await amqp.connect(process.env.RABBITMQ_URL!);
 
     // These two listeners handle the "phone line got cut" situation.
@@ -55,7 +57,9 @@ export async function connectRabbitMQ() {
 
     connection.on("close", () => {
         console.warn("RabbitMQ connection was closed. Will try to reconnect...");
-        scheduleReconnect();
+        if (!isClosing) {
+            scheduleReconnect();
+        }
     });
 
     channel = await connection.createChannel();
@@ -69,7 +73,6 @@ export async function connectRabbitMQ() {
 /**
  * Keeps retrying connectRabbitMQ() every RECONNECT_DELAY_MS until it
  * succeeds. Once reconnected, it re-runs anything registered with
- * onReconnected() (like re-declaring queues and consumers).
  */
 let isReconnecting = false;
 
@@ -110,7 +113,7 @@ export function getChannel() {
 }
 
 export function isRabbitMQConnected(): boolean {
-    return !!channel;
+    return !!connection && !!channel;
 }
 
 /**
@@ -121,6 +124,8 @@ export function isRabbitMQConnected(): boolean {
  * left on purpose instead of thinking we crashed.
  */
 export async function closeRabbitMQ(): Promise<void> {
+    isClosing = true;
+
     try {
         if (channel) {
             await channel.close();
@@ -129,6 +134,9 @@ export async function closeRabbitMQ(): Promise<void> {
         if (connection) {
             await connection.close();
         }
+
+        channel = undefined;
+        connection = undefined;
 
         console.log("RabbitMQ connection closed gracefully.");
     } catch (error) {

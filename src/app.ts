@@ -12,8 +12,19 @@ app.use(cors());
 app.use(express.json());
 
 app.post("/test-publish", async (req, res) => {
-    await publish(QUEUES.PR_QUEUE, req.body);
-    res.json({ status: "published" });
+    // Allow specifying which queue to publish to (for testing)
+    // If not specified, defaults to PR_QUEUE
+    const queue = req.query.queue || QUEUES.PR_QUEUE;
+    
+    try {
+        await publish(queue as string, req.body);
+        res.json({ status: "published" });
+    } catch (error) {
+        res.status(500).json({ 
+            status: "error", 
+            message: error instanceof Error ? error.message : "Unknown error" 
+        });
+    }
 });
 
 

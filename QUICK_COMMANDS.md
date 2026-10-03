@@ -181,9 +181,17 @@ docker stop rabbitmq && docker rm rabbitmq && docker run -d --name rabbitmq -p 5
 ✔ DeadLetterMetadata has all required fields
 ✔ every queue name is a non-empty string
 ✔ no two queues accidentally share the same name
+✔ publishToChannel() serializes the complete message as JSON
+✔ publishToChannel() publishes to the requested queue as persistent
+✔ consumer acknowledges a message after its handler succeeds
+✔ invalid JSON is requeued with its first retry count
+✔ failed messages increment the existing retry count
+✔ a message beyond the retry limit is routed to the dead-letter queue
+✔ dead-letter handler receives parsed data and broker metadata
+✔ dead-letter message is negatively acknowledged when its handler fails
 
-ℹ tests 9
-ℹ pass 9
+ℹ tests 17
+ℹ pass 17
 ℹ fail 0
 ```
 
@@ -219,9 +227,9 @@ docker stop rabbitmq && docker rm rabbitmq && docker run -d --name rabbitmq -p 5
 
 ### ✅ All Tests Success
 ```
-✔ All tests passing (9 + 6 + 8 = 23 total)
-ℹ tests 23
-ℹ pass 23
+✔ All tests passing (17 + 6 + 8 = 31 total)
+ℹ tests 31
+ℹ pass 31
 ℹ fail 0
 ℹ duration_ms 28000ms (approx 28 seconds total)
 ```

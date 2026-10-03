@@ -465,7 +465,7 @@ Your RabbitMQ service is **production-ready**! 🚀
     ╚═════════════════════════════╝
       △ △ △ △ △ △ △ △ △ △
  ╔═════════════════════════════════════╗
- │      Unit Tests (9)                 │  Individual functions
+ │      Unit Tests (17)                │  Individual functions
  │      No dependencies                │  ~1 second
  ╚═════════════════════════════════════╝
 ```

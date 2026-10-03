@@ -230,7 +230,7 @@ Second 14-15: Test 8: Error recovery
 
 ## 🎓 Understanding E2E vs Other Tests
 
-### Unit Tests (9 tests, ~1 second)
+### Unit Tests (17 tests, ~2 seconds)
 ```
 ✓ Test individual functions
 ✓ No dependencies needed

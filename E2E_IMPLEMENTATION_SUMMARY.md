@@ -138,7 +138,7 @@
     └─ Real RabbitMQ
          ~12 seconds
              △ △ △
-        Unit Tests (9)
+        Unit Tests (17)
        ├─ Individual functions
        ├─ No dependencies
        └─ No RabbitMQ
@@ -388,6 +388,6 @@ After E2E tests pass:
 ✅ **Complete documentation and CI/CD examples**
 ✅ **Production-ready validation**
 
-**Total Test Coverage**: 23 tests (9 unit + 6 integration + 8 E2E)
+**Total Test Coverage**: 31 tests (17 unit + 6 integration + 8 E2E), plus 3 opt-in performance scenarios
 **Total Test Duration**: ~28 seconds
 **Status**: ✅ Ready for production deployment

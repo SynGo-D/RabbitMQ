@@ -9,10 +9,9 @@
     "@types/amqplib": "^0.10.8",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/node": "^26.1.2",
-    "nodemon": "^3.1.14",
-    "ts-node": "^10.9.2",
-    "typescript": "^7.0.2"
+    "@types/node": "^26.6.2",
+    "tsx": "^4.23.7",
+    "typescript": "^5.9.2"
   },
   "name": "rabbitmq",
   "version": "1.0.0",
@@ -20,12 +19,15 @@
   "description": "RabbitMQ communication service for SynGo-D backend microservices",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "nodemon --exec ts-node src/server.ts",
+    "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "echo \"No tests yet\""
+    "test": "node --import tsx --test src/**/*.test.ts",
+    "test:unit": "node --import tsx --test --test-concurrency=1 src/rabbitmq/connection.test.ts src/rabbitmq/publisher.test.ts src/rabbitmq/consumer.test.ts src/rabbitmq/queues.test.ts src/rabbitmq/deadletter.test.ts",
+    "test:integration": "node --import tsx --test src/rabbitmq/integration.test.ts",
+    "test:e2e": "node --import tsx --test --test-concurrency=1 src/e2e.test.ts",
+    "test:performance": "node --import tsx --test --test-concurrency=1 src/rabbitmq/performance.perf.ts"
   },
-  
   "repository": {
     "type": "git",
     "url": "git+https://github.com/SynGo-D/RabbitMQ.git"

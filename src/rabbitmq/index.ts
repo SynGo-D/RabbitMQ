@@ -1,12 +1,13 @@
-import { connectRabbitMQ } from "./connection";
-
-import { getChannel } from "./connection";
+import { connectRabbitMQ, getChannel, onReconnected } from "./connection";
 
 import { QUEUES } from "./queues";
 
-export async function initializeRabbitMQ() {
+// Export dead-letter queue functionality
+export { onDeadLetter, type DeadLetterMetadata } from "./deadletter";
 
-    await connectRabbitMQ();
+// Pulled into its own function so it can also be re-run by the
+// onReconnected() hook below, not just on the very first connect.
+async function assertAllQueues() {
 
     const channel = getChannel();
 
@@ -25,6 +26,19 @@ export async function initializeRabbitMQ() {
         );
 
     }
+
+}
+
+export async function initializeRabbitMQ() {
+
+    await connectRabbitMQ();
+
+    await assertAllQueues();
+
+    // If we ever lose connection and reconnect, we get a brand new
+    // channel from RabbitMQ. Re-declaring the queues here makes sure
+    // they're still there before anyone tries to use them again.
+    onReconnected(assertAllQueues);
 
     console.log("RabbitMQ initialized.");
 

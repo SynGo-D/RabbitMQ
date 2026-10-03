@@ -14,8 +14,13 @@
  * - Analyzed to understand systematic failures
  */
 
-import type { ConsumeMessage } from "amqplib";
+import type { Channel, ConsumeMessage } from "amqplib";
 import { getChannel, onReconnected } from "./connection";
+
+type DeadLetterChannel = Pick<
+    Channel,
+    "assertQueue" | "consume" | "ack" | "nack"
+>;
 
 /**
  * Dead-letter queue handlers registered by different services.
@@ -86,6 +91,26 @@ async function startListeningToDeadLetter(
 ): Promise<void> {
 
     const channel = getChannel();
+
+    await listenToDeadLettersOnChannel(
+        channel,
+        originalQueue,
+        deadLetterQueue,
+        handler
+    );
+
+}
+
+/**
+ * Channel-based dead-letter consumer core. Exported for deterministic
+ * component tests that do not require a running RabbitMQ instance.
+ */
+export async function listenToDeadLettersOnChannel(
+    channel: DeadLetterChannel,
+    originalQueue: string,
+    deadLetterQueue: string,
+    handler: (data: unknown, metadata: DeadLetterMetadata) => Promise<void>
+): Promise<void> {
 
     // Make sure the dead-letter queue exists.
     // (It should have been created already when the first message failed,

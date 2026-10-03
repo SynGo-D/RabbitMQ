@@ -17,8 +17,13 @@
  * serves them one by one.
  */
 
-import type { ConsumeMessage } from "amqplib";
+import type { Channel, ConsumeMessage } from "amqplib";
 import { getChannel, onReconnected } from "./connection";
+
+type ConsumerChannel = Pick<
+    Channel,
+    "assertQueue" | "consume" | "ack" | "sendToQueue"
+>;
 
 /**
  * If a message keeps failing, we don't want to retry it forever -
@@ -74,6 +79,20 @@ async function startListening(
 
     // Get the existing RabbitMQ channel.
     const channel = getChannel();
+
+    await startListeningOnChannel(channel, queue, handler);
+
+}
+
+/**
+ * Channel-based consumer core. Exported so message handling can be tested
+ * with a deterministic in-memory channel instead of a live broker.
+ */
+export async function startListeningOnChannel(
+    channel: ConsumerChannel,
+    queue: string,
+    handler: (data: unknown) => Promise<void>
+): Promise<void> {
 
     // Ensure the queue exists (create it if needed)
     // This is important for dynamic queue names (e.g., in tests)
@@ -132,7 +151,7 @@ async function startListening(
             console.error("Failed to process message.");
             console.error(error);
 
-            await handleFailedMessage(queue, msg, error);
+            await handleFailedMessageOnChannel(channel, queue, msg, error);
 
         }
 
@@ -152,13 +171,12 @@ async function startListening(
  * Either way, we ack() the original message - we're not losing it,
  * we're just moving on with a fresh copy of it (or setting it aside).
  */
-async function handleFailedMessage(
+export async function handleFailedMessageOnChannel(
+    channel: ConsumerChannel,
     queue: string,
     msg: ConsumeMessage,
     error: unknown
 ): Promise<void> {
-
-    const channel = getChannel();
 
     const retryCount = getRetryCount(msg) + 1;
 

@@ -14,22 +14,22 @@
  * It only sends it.
  */
 
+import type { Channel } from "amqplib";
 import { getChannel } from "./connection";
 
+type PublishChannel = Pick<Channel, "sendToQueue">;
+
 /**
- * Publishes a message to the specified RabbitMQ queue.
+ * Channel-based publishing core.
  *
- * @param queue   Name of the queue.
- * @param message JavaScript object to send.
+ * Keeping serialization and delivery options in this small function makes
+ * them independently testable without opening a real RabbitMQ connection.
  */
-export async function publish(
+export function publishToChannel(
+    channel: PublishChannel,
     queue: string,
     message: unknown
-): Promise<void> {
-
-    // Get the RabbitMQ communication channel.
-    // This channel was created when the server started.
-    const channel = getChannel();
+): void {
 
     // Convert the JavaScript object into a JSON string.
     // RabbitMQ cannot store JavaScript objects directly.
@@ -62,4 +62,22 @@ export async function publish(
         console.warn("Message could not be published immediately.");
 
     }
+}
+
+/**
+ * Publishes a message to the specified RabbitMQ queue.
+ *
+ * @param queue   Name of the queue.
+ * @param message JavaScript object to send.
+ */
+export async function publish(
+    queue: string,
+    message: unknown
+): Promise<void> {
+
+    // Get the RabbitMQ communication channel.
+    // This channel was created when the server started.
+    const channel = getChannel();
+
+    publishToChannel(channel, queue, message);
 }

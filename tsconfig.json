@@ -66,5 +66,5 @@
 
   // Test files use node:test - they're run directly with tsx (see
   // "npm test"), not compiled into the production build in dist/.
-  "exclude": ["src/**/*.test.ts"]
+  "exclude": ["src/**/*.test.ts", "src/**/*.perf.ts"]
 }

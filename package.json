@@ -23,9 +23,10 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "node --import tsx --test src/**/*.test.ts",
-    "test:unit": "node --import tsx --test src/**/*.test.ts --grep '^(?!Integration|E2E)'",
+    "test:unit": "node --import tsx --test --test-concurrency=1 src/rabbitmq/connection.test.ts src/rabbitmq/publisher.test.ts src/rabbitmq/consumer.test.ts src/rabbitmq/queues.test.ts src/rabbitmq/deadletter.test.ts",
     "test:integration": "node --import tsx --test src/rabbitmq/integration.test.ts",
-    "test:e2e": "node --import tsx --test --test-concurrency=1 src/e2e.test.ts"
+    "test:e2e": "node --import tsx --test --test-concurrency=1 src/e2e.test.ts",
+    "test:performance": "node --import tsx --test --test-concurrency=1 src/rabbitmq/performance.perf.ts"
   },
   "repository": {
     "type": "git",
